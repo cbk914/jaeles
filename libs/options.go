@@ -49,10 +49,15 @@ type Options struct {
 	EnableFormatInput bool
 	EnablePassive     bool
 	DisableParallel   bool
+	AlwaysTrue        bool
 	BaseRoot          bool
 	BurpProxy         bool
 	Server            Server
 	Report            Report
+	ChunkDir          string
+	ChunkRun          bool
+	ChunkSize         int
+	ChunkLimit        int
 }
 
 // Report options for api server

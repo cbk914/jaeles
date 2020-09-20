@@ -9,6 +9,7 @@ import (
 	"github.com/jaeles-project/jaeles/sender"
 	"github.com/jaeles-project/jaeles/utils"
 	jsoniter "github.com/json-iterator/go"
+	"github.com/logrusorgru/aurora/v3"
 	"net/url"
 	"os"
 	"path"
@@ -30,7 +31,13 @@ func Analyze(options libs.Options, record *libs.Record) {
 		if record.IsVulnerable && record.Sign.Donce {
 			return
 		}
-		extra, result := RunDetector(*record, analyze)
+		var extra string
+		var result bool
+		if !options.AlwaysTrue {
+			extra, result = RunDetector(*record, analyze)
+		} else {
+			result = true
+		}
 		if extra != "" {
 			record.ExtraOutput = extra
 		}
@@ -56,16 +63,38 @@ func Analyze(options libs.Options, record *libs.Record) {
 			}
 			vulnInfo := fmt.Sprintf("[%v][%v] %v", record.Sign.ID, record.Sign.Info.Risk, record.Request.URL)
 			if options.Quiet {
-				record.Request.Target["VulnURL"] = record.Request.URL
-				record.Request.Target["Status"] = fmt.Sprintf("%v", record.Response.StatusCode)
-				record.Request.Target["Length"] = fmt.Sprintf("%v", record.Response.Length)
-				record.Request.Target["Words"] = fmt.Sprintf("%v", int64(len(strings.Split(record.Response.Beautify, " "))))
-				record.Request.Target["Time"] = fmt.Sprintf("%v", record.Response.ResponseTime)
-				fmt.Printf("%v\n", ResolveVariable(options.QuietFormat, record.Request.Target))
+				lTarget := make(map[string]string)
+				lTarget["VulnURL"] = record.Request.URL
+				lTarget["Payload"] = record.Request.Payload
+				lTarget["payload"] = record.Request.Payload
+				lTarget["Status"] = fmt.Sprintf("%v", record.Response.StatusCode)
+				lTarget["Length"] = fmt.Sprintf("%v", record.Response.Length)
+				lTarget["Words"] = fmt.Sprintf("%v", int64(len(strings.Split(record.Response.Beautify, " "))))
+				lTarget["Time"] = fmt.Sprintf("%v", record.Response.ResponseTime)
+				fmt.Printf("%v\n", ResolveVariable(options.QuietFormat, lTarget))
 			} else {
-				color.Green("[Vulnerable]%v %v", vulnInfo, outputName)
+				// use this libs because we still want to see color when use chunked mode
+				au := aurora.NewAurora(true)
+				colorSignID := fmt.Sprintf("%s", au.Cyan(record.Sign.ID))
+				colorRisk := fmt.Sprintf("%s", au.Cyan(record.Sign.Info.Risk))
+				risk := strings.ToLower(record.Sign.Info.Risk)
+				switch risk {
+				case "critical":
+					colorRisk = fmt.Sprintf("%s", au.Red(record.Sign.Info.Risk))
+				case "high":
+					colorRisk = fmt.Sprintf("%s", au.BrightRed(record.Sign.Info.Risk))
+				case "medium":
+					colorRisk = fmt.Sprintf("%s", au.Yellow(record.Sign.Info.Risk))
+				case "low":
+					colorRisk = fmt.Sprintf("%s", au.BrightMagenta(record.Sign.Info.Risk))
+				case "info":
+					colorRisk = fmt.Sprintf("%s", au.Blue(record.Sign.Info.Risk))
+				case "potential":
+					colorRisk = fmt.Sprintf("%s", au.Magenta(record.Sign.Info.Risk))
+				}
+				info := fmt.Sprintf("[%s][%s][%s] %s %s", au.Green("Vulnerable"), colorSignID, colorRisk, au.Green(record.Request.URL), au.Green(outputName))
+				fmt.Println(info)
 			}
-
 			if options.FoundCmd != "" {
 				// add some more variables for notification
 				record.Request.Target["vulnInfo"] = vulnInfo

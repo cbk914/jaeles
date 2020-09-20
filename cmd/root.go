@@ -74,7 +74,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&options.FoundCmd, "found", "f", "", "Run host OS command when vulnerable found")
 	RootCmd.PersistentFlags().BoolVarP(&options.EnableFormatInput, "format-input", "J", false, "Enable special input format")
 	RootCmd.PersistentFlags().BoolVar(&options.SaveRaw, "save-raw", false, "save raw request")
-	RootCmd.PersistentFlags().BoolVar(&options.NoOutput, "no-output", false, "Do not store raw output")
+	RootCmd.PersistentFlags().BoolVarP(&options.NoOutput, "no-output", "N", false, "Do not store output")
 	RootCmd.PersistentFlags().BoolVar(&options.NoBackGround, "no-background", false, "Do not run background task")
 	RootCmd.PersistentFlags().BoolVar(&options.NoDB, "no-db", false, "Disable Database")
 	RootCmd.PersistentFlags().BoolVar(&options.DisableParallel, "single", false, "Disable parallel mode (use this when you need logic in single signature")
@@ -84,9 +84,16 @@ func init() {
 	RootCmd.PersistentFlags().BoolVarP(&options.Verbose, "verbose", "v", false, "Verbose output")
 	RootCmd.PersistentFlags().BoolVarP(&options.Version, "version", "V", false, "Print version of Jaeles")
 	RootCmd.PersistentFlags().BoolVar(&options.Debug, "debug", false, "Debug")
-	// some shortcut
+	// chunk options
+	RootCmd.PersistentFlags().BoolVar(&options.ChunkRun, "chunk", false, "Enable chunk running against big input")
+	RootCmd.PersistentFlags().IntVarP(&options.Threads, "threads", "t", 1, "Number of Threads (Only used in chunk mode)")
+	RootCmd.PersistentFlags().IntVar(&options.ChunkSize, "chunk-size", 20000, "Chunk Size")
+	RootCmd.PersistentFlags().StringVar(&options.ChunkDir, "chunk-dir", "", "Temp Directory to store chunk directory")
+	RootCmd.PersistentFlags().IntVar(&options.ChunkLimit, "chunk-limit", 200000, "Limit size to trigger chunk run")
+	// some shortcuts
 	RootCmd.PersistentFlags().BoolVar(&options.BaseRoot, "ba", false, "Shortcut for -p 'BaseURL=[[.Raw]]' or -p 'root=[[.Raw]]'")
 	RootCmd.PersistentFlags().BoolVar(&options.BurpProxy, "lc", false, "Shortcut for '--proxy http://127.0.0.1:8080'")
+	RootCmd.PersistentFlags().BoolVar(&options.AlwaysTrue, "at", false, "Enable Always True Detection for observe response")
 	RootCmd.PersistentFlags().BoolVar(&options.FullHelp, "hh", false, "Show full help message")
 	RootCmd.SetHelpFunc(rootHelp)
 }
@@ -101,11 +108,15 @@ func initConfig() {
 	if options.Debug {
 		options.Verbose = true
 	}
+	// some shortcut
 	if options.BurpProxy {
 		options.Proxy = "http://127.0.0.1:8080"
 	}
 	if options.BaseRoot {
 		options.Params = append(options.Params, "BaseURL=[[.Raw]]")
+	}
+	if options.AlwaysTrue {
+		options.NoOutput = true
 	}
 
 	utils.InitLog(&options)
