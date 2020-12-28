@@ -23,7 +23,7 @@ func InitConfig(options *libs.Options) {
 		os.MkdirAll(options.RootFolder, 0750)
 		// cloning default repo
 		UpdatePlugins(*options)
-		UpdateSignature(*options, "")
+		UpdateSignature(*options)
 	}
 
 	configPath := path.Join(options.RootFolder, "config.yaml")
@@ -86,7 +86,7 @@ func InitConfig(options *libs.Options) {
 	var err error
 	err = os.MkdirAll(options.Output, 0750)
 	if err != nil && options.NoOutput == false {
-		fmt.Fprintf(os.Stderr, "failed to create output directory: %s\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to create output directory: %s -- %s\n", err, options.Output)
 		os.Exit(1)
 	}
 	if options.SummaryOutput == "" {
